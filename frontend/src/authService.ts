@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL
 
 export interface User {
-    email: string
+    phone: string
   }
   
   export interface AuthResponse {
@@ -15,7 +15,7 @@ export interface User {
      * Real Network Login Handler
      * Fires an asynchronous payload to your local backend API engine
      */
-    login: async (email: string, password: string): Promise<AuthResponse> => {
+    login: async (phone: string, password: string): Promise<AuthResponse> => {
       try {
         console.log(`${API_URL}`)
         const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -24,7 +24,7 @@ export interface User {
             'Content-Type': 'application/json'
           },
           credentials: 'include',
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ phone, password }),
         });
   
         const data = await response.json();
@@ -70,7 +70,26 @@ export interface User {
     /**
      * Discard active session states
      */
-    logout: (): void => {
+    logout: async (): Promise<void> => {
       localStorage.removeItem('souvenir_user')
+      try {
+        await fetch(`${API_URL}/api/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+      } catch (error) {
+        console.error('Failed to logout on server:', error);
+      }
+    },
+
+    delete: async (): Promise<void> => {
+        try {
+            await fetch(`${API_URL}/api/auth/delete`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Failed to delete account:', error);
+        }
     }
   };

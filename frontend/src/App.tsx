@@ -25,7 +25,7 @@ function App() {
   }
 
   return (
-    <div className="h-screen w-full bg-white antialiased flex flex-col items-center justify-center relative">
+    <div className="min-h-screen w-full bg-white antialiased flex flex-col items-center justify-center relative font-light">
       <Header />
       
       <main className="w-full flex items-center justify-center px-4">

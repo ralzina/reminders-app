@@ -8,27 +8,35 @@ interface LoginProps {
 }
 
 function Login({ onAuthSuccess }: LoginProps){
-    const [email, setEmail] = useState('')
+    const [phone, setPhone] = useState('')
     const [password, setPassword] = useState('')
-    const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const handleSignIn = async (e: SubmitEvent<HTMLFormElement>) => {
         e.preventDefault()
         setError(null)
 
-        console.log('Authenticating with:', { email, password })
 
-        if (email == null){
-            alert('Please enter your email or your phone number to receive notifications')
+        if (phone == null){
+            alert('Please enter your phone number to receive notifications')
         }else if (password.length < 8){
             alert('Password must be at least 8 characters long')
+        } else if (name == null){
+            alert('Please enter your name!')
         }else{
             console.log('Passed initial check.')
-            setIsLoading(true)
+
+            const cleanPhone = phone.replace(/[^0-9+]/g, '');
+
+            if (cleanPhone.length<10){
+                alert("Please enter a valid phone number with area code.")
+                return;
+            }
+
+            console.log('Authenticating with:', { cleanPhone, password })
 
             try {
-                const response = await authService.login(email, password)
+                const response = await authService.login(cleanPhone, password)
 
                 if (response.success && response.user) {
                     onAuthSuccess(response.user)
@@ -37,8 +45,6 @@ function Login({ onAuthSuccess }: LoginProps){
                 }
             }catch {
                 setError('An unexpected error occurred.')
-            }finally {
-                setIsLoading(false)
             }
         }
     }
@@ -66,15 +72,15 @@ function Login({ onAuthSuccess }: LoginProps){
         {/* 2. Authentication Form */}
         <form onSubmit={handleSignIn} className="space-y-8">
             {/* Input Fields Row: stacks 1 col on mobile, switches to 3 side-by-side columns on medium screens */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 max-w-xl mx-auto">
             
-            {/* Email Input */}
+            {/* Phone number Input */}
             <div>
                 <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Phone Number"
                 required
                 className="w-full px-4 py-3 bg-white border border-zinc-400 rounded-lg text-zinc-900 placeholder-zinc-400 text-sm focus:outline-none focus:border-zinc-900 transition-colors"
                 />

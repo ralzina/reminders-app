@@ -1,9 +1,10 @@
 import express = require('express')
 import type { Request, Response } from 'express';
-const { Pool } = require('pg')
+import pool = require('./db')
 import bcrypt = require('bcryptjs')
 const path = require('path')
 const dotenv = require('dotenv')
+import cronWorker = require('./cronWorker')
 
 dotenv.config({path: path.resolve(__dirname, '../../.env') });
 
@@ -21,36 +22,25 @@ app.use(cors({
     optionsSuccessStatus: 200
 }))
 
-app.options('/*splat', cors());
-
 app.use(express.json());
 app.use(cookieParser());
-
-const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-});
 
 app.get('/', (req, res) => {
     res.send('MY EXPRESS SERVER IS RUNNING');
 });
 
 app.post('/api/auth/login', async (req: Request, res: Response) => {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
-    if (!email || !password) {
-        return res.status(400).json({error: 'Email and password are required'});
+    if (!phone || !password) {
+        return res.status(400).json({error: 'phone and password are required'});
     }
     
-    const lowerEmail = email.toLowerCase();
-    console.log(`Login attempt for: ${email}`);
+    console.log(`Login attempt for: ${phone}`);
 
     try {
-        const queryText = 'SELECT id, email, password FROM users WHERE email = $1';
-        const result = await pool.query(queryText, [lowerEmail]);
+        const queryText = 'SELECT id, phone, password FROM users WHERE phone = $1';
+        const result = await pool.query(queryText, [phone]);
 
         const jwtSecret = process.env.JWT_SECRET
 
@@ -59,13 +49,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         }
 
         if (result.rows.length == 0){
-            console.log(`Email not found, creating user ${lowerEmail}`)
+            console.log(`Phone not found, creating user ${phone}`)
 
             const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(password, saltRounds)
 
-            const insertText = 'INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id, email';
-            const insertResult = await pool.query(insertText, [lowerEmail, hashedPassword]);
+            const insertText = 'INSERT INTO users (phone, password) VALUES ($1, $2) RETURNING id, phone';
+            const insertResult = await pool.query(insertText, [phone, hashedPassword]);
             const newUser = insertResult.rows[0];
         
             const token = jwt.sign(
@@ -83,7 +73,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
             // Return registration success and welcome message
             return res.status(201).json({
                 message: 'Registration successful! Welcome to the app!',
-                user: { id: newUser.id, email: newUser.email }
+                user: { id: newUser.id, phone: newUser.phone }
             });
         }
 
@@ -92,7 +82,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
-            return res.status(401).json({error: 'Invalid email or password'});
+            return res.status(401).json({error: 'Invalid phone or password'});
         }
 
         const token = jwt.sign(
@@ -110,7 +100,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
         res.status(200).json({
             message: 'Login successful!',
-            user: { id: user.id, email: user.email}
+            user: { id: user.id, phone: user.phone}
         });
     }catch (error) {
         console.error('Database error:', error);
@@ -118,6 +108,261 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/api/auth/logout', async (req: Request, res: Response) => {
+    res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV == 'production',
+        sameSite: 'lax'
+    });
+
+    return res.status(200).json({message: 'Logged out successfully'});
+});
+
+app.post('/api/reminders', async (req: Request, res: Response) => {
+    const token = req.cookies.auth_token;
+
+    if (!token) {
+        return res.status(401).json({error: "Unauthorized. Please log in first."});
+    }
+
+    try {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            throw new Error('JWT_SECRET missing from enviornment variables');
+        }
+
+        const decoded = jwt.verify(token, jwtSecret) as { id: string };
+
+        const authenticUserId = decoded.id;
+        console.log(`Verified post request from User UUID: ${authenticUserId}`)
+
+        const { text, startDate, isPeriodic, period, until } = req.body;
+
+        if (isPeriodic && (!period || !until || (period.weeks === 0 && period.days === 0 && period.hours === 0))) {
+            console.log(period, until)
+            return res.status(400).json({ 
+                error: 'Periodic reminders must have a repeat interval set (at least 1 hour, day, or week).' 
+            });
+        }
+
+        const countQuery = `
+            SELECT COUNT(*) FROM reminders 
+            WHERE user_id = $1
+        `;
+        const countResult = await pool.query(countQuery, [authenticUserId]);
+        const activeReminderCount = parseInt(countResult.rows[0].count, 10);
+
+        const MAX_REMINDERS_ALLOWED = 10;
+        if (activeReminderCount >= MAX_REMINDERS_ALLOWED) {
+            return res.status(400).json({ 
+                error: `Limit reached. You can only have a maximum of ${MAX_REMINDERS_ALLOWED} active reminders at once.` 
+            });
+        }
+
+        const insertText = `
+            INSERT INTO reminders (user_id, reminder_text, start_date, next_reminder, is_periodic, weeks, days, hours, until)
+            VALUES ($1, $2, $3, $3, $4, $5, $6, $7, $8)
+            RETURNING *;
+        `;
+
+        const result = await pool.query(insertText, [
+            authenticUserId,
+            text,
+            startDate,
+            isPeriodic,
+            period?.weeks || 0,
+            period?.days || 0,
+            period?.hours || 0,
+            until
+        ]);
+
+        return res.status(201).json({
+            message: 'Reminder successfully created!',
+            reminder: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Security alert or token error:', error)
+        return res.status(403).json({error: 'Invalid or expired session token.'});
+    }
+});
+
+app.get('/api/reminders', async (req: Request, res: Response) => {
+    const token = req.cookies.auth_token;
+
+    if (!token) {
+        return res.status(401).json({error: "Unauthorized. Please log in first."});
+    }
+
+    try {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            throw new Error('JWT_SECRET missing from enviornment variables');
+        }
+
+        const decoded = jwt.verify(token, jwtSecret) as { id: string };
+
+        const authenticUserId = decoded.id;
+        console.log(`Verified get request from User UUID: ${authenticUserId}`)
+
+        const getText = `
+            SELECT * FROM reminders WHERE user_id = $1
+        `;
+
+        const result = await pool.query(getText, [
+            authenticUserId,
+        ]);
+
+        return res.status(201).json({
+            message: 'Reminder successfully created!',
+            reminders: result.rows
+        });
+    } catch (error) {
+        console.error('Security alert or token error:', error)
+        return res.status(403).json({error: 'Invalid or expired session token.'});
+    }
+});
+
+app.delete('/api/reminders/:id', async (req: Request, res: Response) => {
+    const token = req.cookies.auth_token;
+
+    if (!token) {
+        return res.status(401).json({error: "Unauthorized. Please log in first."});
+    }
+
+    try {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            throw new Error('JWT_SECRET missing from enviornment variables');
+        }
+
+        const decoded = jwt.verify(token, jwtSecret) as { id: string };
+
+        const authenticUserId = decoded.id;
+        console.log(`Verified delete request from User UUID: ${authenticUserId}`)
+
+        const id = req.params.id;
+
+        const deleteText = `
+            DELETE FROM reminders WHERE id = $1 AND user_id = $2;
+        `;
+
+        const result = await pool.query(deleteText, [
+            id,
+            authenticUserId
+        ]);
+
+        return res.status(200).json({
+            message: 'Reminder successfully deleted!',
+        });
+    } catch (error) {
+        console.error('Security alert or token error:', error)
+        return res.status(403).json({error: 'Invalid or expired session token.'});
+    }
+});
+
+app.put('/api/reminders/:id', async (req: Request, res: Response) => {
+    const token = req.cookies.auth_token;
+
+    if (!token) {
+        return res.status(401).json({error: "Unauthorized. Please log in first."});
+    }
+
+    try {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            throw new Error('JWT_SECRET missing from enviornment variables');
+        }
+
+        const decoded = jwt.verify(token, jwtSecret) as { id: string };
+
+        const authenticUserId = decoded.id;
+        console.log(`Verified put request from User UUID: ${authenticUserId}`)
+
+        const { text, startDate, isPeriodic, period, until } = req.body;
+
+        const id = req.params.id;
+
+        if (isPeriodic && (!period || !until || (period.weeks === 0 && period.days === 0 && period.hours === 0))) {
+            console.log(period, until)
+            return res.status(400).json({ 
+                error: 'Periodic reminders must have a repeat interval set (at least 1 hour, day, or week).' 
+            });
+        }
+
+        const putText = `
+            UPDATE reminders
+            SET reminder_text = $1,
+                start_date = $2,
+                is_periodic = $3,
+                weeks = $4,
+                days = $5,
+                hours = $6,
+                until = $7
+            WHERE id = $8 AND user_id = $9
+            RETURNING *;
+        `;
+
+        const result = await pool.query(putText, [
+            text,
+            startDate,
+            isPeriodic,
+            period?.weeks || 0,
+            period?.days || 0,
+            period?.hours || 0,
+            until || null,
+            id,
+            authenticUserId
+        ]);
+
+        return res.status(201).json({
+            message: 'Reminder successfully created!',
+            reminder: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Security alert or token error:', error)
+        return res.status(403).json({error: 'Invalid or expired session token.'});
+    }
+});
+
+app.delete('/api/auth/:id', async (req: Request, res: Response) => {
+    const token = req.cookies.auth_token;
+
+    if (!token) {
+        return res.status(401).json({error: "Unauthorized. Please log in first."});
+    }
+
+    try {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+            throw new Error('JWT_SECRET missing from enviornment variables');
+        }
+
+        const decoded = jwt.verify(token, jwtSecret) as { id: string };
+
+        const authenticUserId = decoded.id;
+        console.log(`Verified delete request from User UUID: ${authenticUserId}`)
+
+        const id = req.params.id;
+
+        const deleteText = `
+            DELETE FROM reminders WHERE id = $1;
+        `;
+
+        const result = await pool.query(deleteText, [
+            authenticUserId
+        ]);
+
+        return res.status(200).json({
+            message: 'User successfully deleted!',
+        });
+    } catch (error) {
+        console.error('Security alert or token error:', error)
+        return res.status(403).json({error: 'Invalid or expired session token.'});
+    }
+})
+
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
-})
+
+    cronWorker.initCronJobs();
+});
