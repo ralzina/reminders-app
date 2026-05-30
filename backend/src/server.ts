@@ -17,7 +17,7 @@ const app = express();
 const port = 9000;
 
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: 'http://192.168.1.143:5173',
     credentials: true,
     optionsSuccessStatus: 200
 }))
@@ -361,8 +361,8 @@ app.delete('/api/auth/:id', async (req: Request, res: Response) => {
     }
 })
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running at port ${port}`);
 
     cronWorker.initCronJobs();
 });

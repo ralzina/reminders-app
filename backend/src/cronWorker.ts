@@ -1,5 +1,6 @@
 import cron = require('node-cron');
 import pool = require('./db');
+import sendWhatAppMessage = require('./whatsapp');
 
 const checkAndExecuteReminders = async () => {
     const now = new Date();
@@ -25,6 +26,8 @@ const checkAndExecuteReminders = async () => {
 
         for(const reminder of dueReminders) {
             console.log(`Sending ${reminder.phone}:${reminder.reminder_text}`)
+
+            await sendWhatAppMessage(reminder.phone, reminder.reminder_text)
 
             if (!reminder.is_periodic) {
                 console.log('Reminder lifetime complete');

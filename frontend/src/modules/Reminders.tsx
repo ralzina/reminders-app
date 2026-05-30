@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { reminderService } from '../reminderService';
+import type { User } from '../authService';
 
 export interface Reminder {
     id: string;
@@ -20,9 +21,10 @@ interface RemindersProps {
     error: string | null;
     setError: React.Dispatch<React.SetStateAction<string | null>>;
     onEditClick: (reminder: Reminder) => void;
+    setUser: (user: User | null) => void;
 }
 
-export default function Reminders({ reminders, setReminders, error, setError, onEditClick }: RemindersProps) {
+export default function Reminders({ reminders, setReminders, error, setError, onEditClick, setUser }: RemindersProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null);
 
     const toggleExpand = (id: string) => {
@@ -147,6 +149,10 @@ export default function Reminders({ reminders, setReminders, error, setError, on
                                                             })
                                                         }else if (response.error){
                                                             setError(response.error)
+                                                            if (response.error.toLowerCase().includes('login')) {
+                                                                alert('Session expired, logging out');
+                                                                setUser(null);
+                                                            }
                                                         }
                                                     } catch {
                                                         setError('An unexpected error occurred')

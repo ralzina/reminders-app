@@ -67,6 +67,7 @@ function Dashboard({ user, setUser }: DashboardProps) {
                 error={error} 
                 setError={setError}
                 onEditClick={setEditingReminder}
+                setUser={setUser}
             />
         </div>
 

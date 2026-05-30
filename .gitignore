@@ -24,3 +24,7 @@ frontend/*.sln
 frontend/*.sw?
 
 .env
+
+docker-compose.yml
+.github/workflows/deploy.yml
+backend/Dockerfile

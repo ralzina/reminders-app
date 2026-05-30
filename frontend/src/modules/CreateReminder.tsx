@@ -71,18 +71,16 @@ function CreateReminder({ onReminderCreated, editingReminder, clearEdit, setRemi
             return;
         }
 
-        if (isPeriodic && until) {
-            const start = new Date(startDate);
-            const end = new Date(until);
-    
+        const now = new Date();
+        const start = new Date(startDate);
+        const end = (isPeriodic && until.trim() !== '') ? new Date(until) : null;
+
+        if (isPeriodic && until) {    
             if (end <= start) {
                 alert("Validation Error: The 'Until' expiration date must happen AFTER the start date and time!");
                 return;
             }
         }
-
-        const start = new Date(startDate);
-        const now = new Date();
 
         now.setSeconds(0);
         now.setMilliseconds(0);
@@ -92,13 +90,16 @@ function CreateReminder({ onReminderCreated, editingReminder, clearEdit, setRemi
             return;
         }
 
+        const utc_start = start.toISOString();
+        const utc_until = (isPeriodic && until.trim() !== '') ? end.toISOString() : null;
+
         if (editingReminder) {
             const payload: ReminderPayload = {
                 text,
-                startDate,
+                startDate: utc_start,
                 isPeriodic,
                 period: isPeriodic ? { weeks, days, hours } : null,
-                until: isPeriodic ? until : null,
+                until: isPeriodic ? utc_until : null,
             };
     
             console.log('Sending reminder package:', payload);
@@ -123,10 +124,10 @@ function CreateReminder({ onReminderCreated, editingReminder, clearEdit, setRemi
         } else {
             const payload: ReminderPayload = {
                 text,
-                startDate,
+                startDate: utc_start,
                 isPeriodic,
                 period: isPeriodic ? { weeks, days, hours } : null,
-                until: isPeriodic ? until : null,
+                until: isPeriodic ? utc_until : null,
             };
     
             console.log('Sending reminder package:', payload);
@@ -230,7 +231,7 @@ function CreateReminder({ onReminderCreated, editingReminder, clearEdit, setRemi
                 <label className="text-xs uppercase tracking-wider text-zinc-400">Until (optional)</label>
                 <input
                     type="datetime-local"
-                    value={startDate}
+                    value={until}
                     onChange={(e) => setUntil(e.target.value)}
                     className="border border-zinc-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-zinc-950"
                 />
