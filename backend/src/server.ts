@@ -113,12 +113,12 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
             { expiresIn: '1d' }
         );
 
-        res.cookie('auth_token', token, {
+        res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true,      
+            sameSite: 'none',  
             maxAge: 24 * 60 * 60 * 1000
-        })
+        });
 
         res.status(200).json({
             message: 'Login successful!',
