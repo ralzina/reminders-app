@@ -17,7 +17,6 @@ export interface User {
      */
     login: async (phone: string, password: string): Promise<AuthResponse> => {
       try {
-        console.log(`${API_URL}`)
         const response = await fetch(`${API_URL}/api/auth/login`, {
           method: 'POST',
           headers: {
@@ -61,7 +60,7 @@ export interface User {
   
     getReminders: async () => {
       const token = localStorage.getItem('souvenir_token');
-      
+
       return fetch(`${API_URL}/api/reminders`, {
         method: 'GET',
         headers: {

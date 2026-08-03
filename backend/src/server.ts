@@ -397,6 +397,8 @@ app.delete('/api/auth/:id', async (req: Request, res: Response) => {
 })
 
 app.post('/api/cron/check-reminders', async (req: Request, res: Response) => {
+    console.log("Cron endpoint hit, checking due reminders");
+
     const authHeader = req.headers.authorization;
     const expectedHeader = `Bearer ${process.env.CRON_SECRET}`;
   
