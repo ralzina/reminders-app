@@ -1,7 +1,4 @@
-const BACKEND_HOST = import.meta.env.VITE_BACKEND_HOST
-const BACKEND_PORT = import.meta.env.VITE_BACKEND_PORT
-
-const API_URL = `http://${BACKEND_HOST}:${BACKEND_PORT}` 
+const API_URL = import.meta.env.VITE_BACKEND_URL
 
 export interface User {
     phone: string

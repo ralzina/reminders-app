@@ -13,15 +13,14 @@ const cors = require('cors');
 import cookieParser = require('cookie-parser')
 import jwt = require('jsonwebtoken')
 
-const BACKEND_PORT: number = parseInt(process.env.VITE_BACKEND_PORT || '9000', 10);
-const FRONTEND_HOST = process.env.VITE_FRONTEND_HOST || 'localhost';
-const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT || '5173';
+const BACKEND_PORT: number = parseInt(process.env.PORT || '9000', 10);
+const FRONTEND_URL = process.env.VITE_FRONTEND_URL || 'https://localhost:5173';
 
 const app = express();
-const port = BACKEND_PORT;
+const port = BACKEND_PORT
 
 app.use(cors({
-    origin: `http://${FRONTEND_HOST}:${FRONTEND_PORT}`,    
+    origin: FRONTEND_URL,    
     credentials: true,
     optionsSuccessStatus: 200
 }))
@@ -365,8 +364,27 @@ app.delete('/api/auth/:id', async (req: Request, res: Response) => {
     }
 })
 
+app.post('/api/cron/check-reminders', async (req: Request, res: Response) => {
+    const authHeader = req.headers.authorization;
+    const expectedHeader = `Bearer ${process.env.CRON_SECRET}`;
+  
+    if (!authHeader || authHeader !== expectedHeader) {
+      return res.status(401).json({ error: 'Unauthorized system request' });
+    }
+  
+    try {
+      const results = await cronWorker.checkAndExecuteReminders();
+      return res.status(200).json({ success: true, processed: results });
+    } catch (error) {
+      console.error('Cron Execution Error:', error);
+      return res.status(500).json({ error: 'Failed to process reminders' });
+    }
+  });
+
 app.listen(port, '0.0.0.0', () => {
     console.log(`Server running at port ${port}`);
 
-    cronWorker.initCronJobs();
+    if (process.env.ENV == 'local'){
+        cronWorker.initCronJobs();
+    }
 });

@@ -68,4 +68,4 @@ const initCronJobs = () => {
     console.log('Cron engine initialized')
 }
 
-export = { initCronJobs };
+export = { initCronJobs, checkAndExecuteReminders };
