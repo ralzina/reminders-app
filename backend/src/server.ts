@@ -404,6 +404,7 @@ app.post('/api/cron/check-reminders', async (req: Request, res: Response) => {
     const expectedHeader = `Bearer ${expectedSecret}`;
 
     // Safe diagnostic logging (No raw secrets revealed)
+    /*
     console.log("--- Header Diagnosis ---");
     console.log("Auth header present:", Boolean(authHeader));
     console.log("Auth header starts with 'Bearer ':", authHeader?.startsWith('Bearer '));
@@ -412,12 +413,13 @@ app.post('/api/cron/check-reminders', async (req: Request, res: Response) => {
     console.log("Is CRON_SECRET defined in env?:", Boolean(expectedSecret));
     console.log("Exact match?:", authHeader === expectedHeader);
     console.log("-------------------------");
+    */
   
     if (!authHeader || authHeader !== expectedHeader) {
       return res.status(401).json({ error: 'Unauthorized system request' });
     }
 
-    console.log("Headers passed, calling function")
+    // console.log("Headers passed, calling function")
   
     try {
       const results = await cronWorker.checkAndExecuteReminders();
