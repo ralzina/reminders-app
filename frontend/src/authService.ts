@@ -32,6 +32,11 @@ export interface User {
           // Store the real server-issued assets in the local browser state
 
           localStorage.setItem('souvenir_user', JSON.stringify(data.user))
+
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+          }
+
           return { success: true, user: data.user };
         }
     
@@ -76,6 +81,7 @@ export interface User {
      */
     logout: async (): Promise<void> => {
       localStorage.removeItem('souvenir_user')
+      localStorage.removeItem('token');
       try {
         await fetch(`${API_URL}/api/auth/logout`, {
             method: 'POST',

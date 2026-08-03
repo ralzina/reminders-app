@@ -40,6 +40,7 @@ const corsOptions = {
       }
     },
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   };
   
 app.use(cors(corsOptions));
@@ -154,7 +155,7 @@ app.post('/api/auth/logout', async (req: Request, res: Response) => {
 });
 
 app.post('/api/reminders', async (req: Request, res: Response) => {
-    const token = req.cookies.token;
+    const token = getToken(req);
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
@@ -258,7 +259,7 @@ app.get('/api/reminders', async (req: Request, res: Response) => {
 });
 
 app.delete('/api/reminders/:id', async (req: Request, res: Response) => {
-    const token = req.cookies.token;
+    const token = getToken(req);
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
@@ -296,7 +297,7 @@ app.delete('/api/reminders/:id', async (req: Request, res: Response) => {
 });
 
 app.put('/api/reminders/:id', async (req: Request, res: Response) => {
-    const token = req.cookies.token;
+    const token = getToken(req);
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
@@ -360,7 +361,7 @@ app.put('/api/reminders/:id', async (req: Request, res: Response) => {
 });
 
 app.delete('/api/auth/:id', async (req: Request, res: Response) => {
-    const token = req.cookies.token;
+    const token = getToken(req);
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
