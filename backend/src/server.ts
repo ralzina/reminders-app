@@ -401,14 +401,18 @@ app.post('/api/cron/check-reminders', async (req: Request, res: Response) => {
 
     const authHeader = req.headers.authorization;
     const expectedHeader = `Bearer ${process.env.CRON_SECRET}`;
+
+    console.log("Checking headers")
   
     if (!authHeader || authHeader !== expectedHeader) {
       return res.status(401).json({ error: 'Unauthorized system request' });
     }
+
+    console.log("Headers passed, calling function")
   
     try {
       const results = await cronWorker.checkAndExecuteReminders();
-      
+
       console.log('Cron execution complete. Results:', results);
 
       return res.status(200).json({ success: true, processed: results });
