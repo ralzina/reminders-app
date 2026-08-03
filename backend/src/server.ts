@@ -131,7 +131,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 });
 
 app.post('/api/auth/logout', async (req: Request, res: Response) => {
-    res.clearCookie('auth_token', {
+    res.clearCookie('token', {
         httpOnly: true,
         secure: process.env.NODE_ENV == 'production',
         sameSite: 'lax'
@@ -141,7 +141,7 @@ app.post('/api/auth/logout', async (req: Request, res: Response) => {
 });
 
 app.post('/api/reminders', async (req: Request, res: Response) => {
-    const token = req.cookies.auth_token;
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
@@ -245,7 +245,7 @@ app.get('/api/reminders', async (req: Request, res: Response) => {
 });
 
 app.delete('/api/reminders/:id', async (req: Request, res: Response) => {
-    const token = req.cookies.auth_token;
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
@@ -283,7 +283,7 @@ app.delete('/api/reminders/:id', async (req: Request, res: Response) => {
 });
 
 app.put('/api/reminders/:id', async (req: Request, res: Response) => {
-    const token = req.cookies.auth_token;
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
@@ -347,7 +347,7 @@ app.put('/api/reminders/:id', async (req: Request, res: Response) => {
 });
 
 app.delete('/api/auth/:id', async (req: Request, res: Response) => {
-    const token = req.cookies.auth_token;
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
