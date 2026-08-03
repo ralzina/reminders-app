@@ -59,12 +59,14 @@ export interface User {
       return null
     },
   
-    getReminders() {
-        return fetch('/api/reminders', {
-          method: 'GET', // Just reading data
-          credentials: 'include' // Browser automatically attaches the cookie here!
-                                 // No body, no password, no username needed.
-        });
+    getReminders: async () => {
+      return fetch(`${API_URL}/api/reminders`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      });
     },
 
     /**

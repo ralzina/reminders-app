@@ -19,11 +19,30 @@ const FRONTEND_URL = process.env.VITE_FRONTEND_URL || 'https://localhost:5173';
 const app = express();
 const port = BACKEND_PORT
 
-app.use(cors({
-    origin: FRONTEND_URL,    
+const corsOptions = {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void
+    ) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+  
+      const isAllowed =
+        origin === FRONTEND_URL ||
+        origin.startsWith('http://localhost:') ||
+        origin.endsWith('.vercel.app');
+  
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS policy blocked request from origin: ${origin}`));
+      }
+    },
     credentials: true,
-    optionsSuccessStatus: 200
-}))
+  };
+  
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -66,10 +85,10 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
                 jwtSecret,
                 {expiresIn: '1d'});
 
-            res.cookie('auth_token', token, {
+            res.cookie('token', token, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
+                secure: true,      
+                sameSite: 'none',  
                 maxAge: 24 * 60 * 60 * 1000
             });
     
