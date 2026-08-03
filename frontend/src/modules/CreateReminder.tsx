@@ -91,8 +91,8 @@ function CreateReminder({ onReminderCreated, editingReminder, clearEdit, setRemi
         }
 
         const utc_start = start.toISOString();
-        const utc_until = (isPeriodic && until.trim() !== '') ? end.toISOString() : null;
-
+        const utc_until = (isPeriodic && until.trim() !== '' && end) ? end.toISOString() : null;
+        
         if (editingReminder) {
             const payload: ReminderPayload = {
                 text,
