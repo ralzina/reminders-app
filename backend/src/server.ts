@@ -408,6 +408,9 @@ app.post('/api/cron/check-reminders', async (req: Request, res: Response) => {
   
     try {
       const results = await cronWorker.checkAndExecuteReminders();
+      
+      console.log('Cron execution complete. Results:', results);
+
       return res.status(200).json({ success: true, processed: results });
     } catch (error) {
       console.error('Cron Execution Error:', error);
