@@ -47,6 +47,17 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
+// extract token from Header OR Cookie
+const getToken = (req: Request): string | null => {
+    // 1. Check Authorization header (Bearer <token>)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+    }
+    // 2. Fallback to cookie
+    return req.cookies?.token ?? null;
+};
+
 app.get('/', (req, res) => {
     res.send('MY EXPRESS SERVER IS RUNNING');
 });
@@ -95,6 +106,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
             // Return registration success and welcome message
             return res.status(201).json({
                 message: 'Registration successful! Welcome to the app!',
+                token,
                 user: { id: newUser.id, phone: newUser.phone }
             });
         }
@@ -122,6 +134,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
         res.status(200).json({
             message: 'Login successful!',
+            token,
             user: { id: user.id, phone: user.phone}
         });
     }catch (error) {
@@ -209,7 +222,7 @@ app.post('/api/reminders', async (req: Request, res: Response) => {
 });
 
 app.get('/api/reminders', async (req: Request, res: Response) => {
-    const token = req.cookies.token;
+    const token = getToken(req);
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});

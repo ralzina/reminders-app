@@ -60,10 +60,13 @@ export interface User {
     },
   
     getReminders: async () => {
+      const token = localStorage.getItem('souvenir_token');
+      
       return fetch(`${API_URL}/api/reminders`, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         credentials: 'include'
       });
