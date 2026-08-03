@@ -75,7 +75,7 @@ function CreateReminder({ onReminderCreated, editingReminder, clearEdit, setRemi
         const start = new Date(startDate);
         const end = (isPeriodic && until.trim() !== '') ? new Date(until) : null;
 
-        if (isPeriodic && until) {    
+        if (isPeriodic && end) {    
             if (end <= start) {
                 alert("Validation Error: The 'Until' expiration date must happen AFTER the start date and time!");
                 return;
@@ -92,7 +92,7 @@ function CreateReminder({ onReminderCreated, editingReminder, clearEdit, setRemi
 
         const utc_start = start.toISOString();
         const utc_until = (isPeriodic && until.trim() !== '' && end) ? end.toISOString() : null;
-        
+
         if (editingReminder) {
             const payload: ReminderPayload = {
                 text,
