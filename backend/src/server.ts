@@ -209,7 +209,7 @@ app.post('/api/reminders', async (req: Request, res: Response) => {
 });
 
 app.get('/api/reminders', async (req: Request, res: Response) => {
-    const token = req.cookies.auth_token;
+    const token = req.cookies.token;
 
     if (!token) {
         return res.status(401).json({error: "Unauthorized. Please log in first."});
@@ -234,7 +234,7 @@ app.get('/api/reminders', async (req: Request, res: Response) => {
             authenticUserId,
         ]);
 
-        return res.status(201).json({
+        return res.status(200).json({
             message: 'Reminder successfully created!',
             reminders: result.rows
         });
