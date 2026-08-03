@@ -13,11 +13,15 @@ const cors = require('cors');
 import cookieParser = require('cookie-parser')
 import jwt = require('jsonwebtoken')
 
+const BACKEND_PORT: number = parseInt(process.env.VITE_BACKEND_PORT || '9000', 10);
+const FRONTEND_HOST = process.env.VITE_FRONTEND_HOST || 'localhost';
+const FRONTEND_PORT = process.env.VITE_FRONTEND_PORT || '5173';
+
 const app = express();
-const port = 9000;
+const port = BACKEND_PORT;
 
 app.use(cors({
-    origin: 'http://192.168.1.143:5173',
+    origin: `http://${FRONTEND_HOST}:${FRONTEND_PORT}`,    
     credentials: true,
     optionsSuccessStatus: 200
 }))

@@ -14,7 +14,7 @@ const sendWhatAppMessage = async (to: string, message: string): Promise<void> =>
         return;
     }
 
-    const cleanPhone = to.replace(/D/g, '');
+    const cleanPhone = to.replace(/\D/g, '');
 
     const url = `https://graph.facebook.com/v25.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
@@ -23,7 +23,7 @@ const sendWhatAppMessage = async (to: string, message: string): Promise<void> =>
         to: cleanPhone,
         type: "template",
         template: {
-            name: "task_reminder_alert",
+            name: "task_reminder",
             language: {
                 code: "en"
             },
@@ -33,6 +33,7 @@ const sendWhatAppMessage = async (to: string, message: string): Promise<void> =>
                     parameters: [
                         {
                             type: "text",
+                            parameter_name: "text",
                             text: message
                         }
                     ]
