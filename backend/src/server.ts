@@ -400,9 +400,18 @@ app.post('/api/cron/check-reminders', async (req: Request, res: Response) => {
     console.log("Cron endpoint hit, checking due reminders");
 
     const authHeader = req.headers.authorization;
-    const expectedHeader = `Bearer ${process.env.CRON_SECRET}`;
+    const expectedSecret = process.env.CRON_SECRET;
+    const expectedHeader = `Bearer ${expectedSecret}`;
 
-    console.log("Checking headers")
+    // Safe diagnostic logging (No raw secrets revealed)
+    console.log("--- Header Diagnosis ---");
+    console.log("Auth header present:", Boolean(authHeader));
+    console.log("Auth header starts with 'Bearer ':", authHeader?.startsWith('Bearer '));
+    console.log("Received length:", authHeader?.length ?? 0);
+    console.log("Expected length:", expectedHeader.length);
+    console.log("Is CRON_SECRET defined in env?:", Boolean(expectedSecret));
+    console.log("Exact match?:", authHeader === expectedHeader);
+    console.log("-------------------------");
   
     if (!authHeader || authHeader !== expectedHeader) {
       return res.status(401).json({ error: 'Unauthorized system request' });
